@@ -4,6 +4,7 @@ import pandas as pd
 
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import confusion_matrix
 
 TEST_SIZE = 0.4
 
@@ -61,17 +62,28 @@ def load_data(filename):
     is 1 if Revenue is true, and 0 otherwise.
     """
 
-    print(filename)
+    #print(filename)
 
     df = pd.read_csv(filename)
+    #print(df.columns)
     #print(df)
     #print(df.iloc[0])
     df_list = df.values.tolist()
     #print(df_list)
-    print(df_list[0])
+    #print(df_list[0])
 
-    evidence = [[int(row[0]), int(row[1]), int(row[2])] for row in df_list]
-    print(evidence)
+    # ['Administrative', 'Administrative_Duration', 'Informational',
+    #        'Informational_Duration', 'ProductRelated', 'ProductRelated_Duration',
+    #        'BounceRates', 'ExitRates', 'PageValues', 'SpecialDay', 'Month',
+    #        'OperatingSystems', 'Browser', 'Region', 'TrafficType', 'VisitorType',
+    #        'Weekend']
+    evidence = [[int(row[0]), float(row[1]), int(row[2]),
+                 float(row[3]), int(row[4]), float(row[5]),
+                 float(row[6]), float(row[7]), float(row[8]), float(row[9]), month_to_number(row[10]),
+                 int(row[11]), int(row[12]), int(row[13]), int(row[14]), visitor_to_number(row[15]),
+                 weekend_to_number(row[16])
+                 ] for row in df_list]
+    #print(evidence)
 
     # get the last column a create a list
     last_column = [row[-1] for row in df_list]
@@ -81,8 +93,25 @@ def load_data(filename):
     labels = last_column
     #print(last_column)
 
+    return (evidence, labels)
 
-    raise NotImplementedError
+
+    #raise NotImplementedError
+
+def month_to_number(month_abbr):
+    months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June',
+              'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    return months.index(month_abbr)
+
+def visitor_to_number(visitor_val):
+    if visitor_val == 'Other':
+        return 0
+    visitor = ['New_Visitor', 'Returning_Visitor']
+    return visitor.index(visitor_val)
+
+def weekend_to_number(weekend_val):
+    weekend = [False, True]
+    return weekend.index(weekend_val)
 
 
 def train_model(evidence, labels):
@@ -90,7 +119,12 @@ def train_model(evidence, labels):
     Given a list of evidence lists and a list of labels, return a
     fitted k-nearest neighbor model (k=1) trained on the data.
     """
-    raise NotImplementedError
+    model = KNeighborsClassifier(n_neighbors=1)
+    model.fit(evidence, labels)
+    return model
+
+
+    #raise NotImplementedError
 
 
 def evaluate(labels, predictions):
@@ -108,7 +142,23 @@ def evaluate(labels, predictions):
     representing the "true negative rate": the proportion of
     actual negative labels that were accurately identified.
     """
-    raise NotImplementedError
+    cm = confusion_matrix(labels, predictions)
+
+    # True negative
+    TN = cm[0, 0]
+    # True postive
+    TP = cm[1, 1]
+    # False Negative
+    FN = cm[1, 0]
+    # False Positive
+    FP = cm[0, 1]
+
+    sensitivity = TP / (TP + FN)
+    specificity = TN / (TN + FP)
+
+    return (sensitivity, specificity)
+
+    #raise NotImplementedError
 
 
 if __name__ == "__main__":
